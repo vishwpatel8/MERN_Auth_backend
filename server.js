@@ -22,17 +22,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// routes 
-const routeFiles= fs.readdirSync("./src/routes");
-routeFiles.forEach((file)=> {
-  import(`./src/routes/${file}`).then((route)=> {
-    app.use("/api/v1", route.default);
-  }).catch((err)=> {
-    console.log("Failed to Log Route File", err);
-  });
+// routes
+const routeFiles = fs.readdirSync("./src/routes");
+routeFiles.forEach((file) => {
+  import(`./src/routes/${file}`)
+    .then((route) => {
+      app.use("/api/v1", route.default);
+    })
+    .catch((err) => {
+      console.log("Failed to Log Route File", err);
+    });
 });
-
-console.log(routeFiles);
 
 const server = async () => {
   try {
