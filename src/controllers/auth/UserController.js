@@ -2,7 +2,7 @@ import asyncHandler from "express-async-handler";
 import User from "../../models/auth/UserModal.js";
 import generateToken from "../../helpers/generateToken.js";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt.js";
+import bcrypt from "bcrypt";
 
 export const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -35,7 +35,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     path: "/",
     httpOnly: true,
     maxAge: 30 * 24 * 60 * 60 * 1000,
-    sameSite: true,
+    sameSite: "none",
     secure: true,
   });
 
@@ -57,7 +57,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "All fields are Required." });
   }
 
-  const userExists = User.findOne({ email });
+  const userExists = await User.findOne({ email });
 
   if (!userExists) {
     return res.status(400).json({ message: "Please Register before Login" });
@@ -78,7 +78,7 @@ export const loginUser = asyncHandler(async (req, res) => {
       path: "/",
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000,
-      sameSite: true,
+      sameSite: "none",
       secure: true,
     });
 
@@ -88,5 +88,43 @@ export const loginUser = asyncHandler(async (req, res) => {
   } else {
     return res.status(400).json({ message: "Invalid email or password" });
   }
-  res.send("Login User");
+});
+
+export const logoutUser = asyncHandler(async (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ message: "User Logged Out." });
+});
+
+export const getUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select("-password");
+  if (user) {
+    res.status(200).json(user);
+  } else {
+    res.status(404).json({ message: "User not Found" });
+  }
+});
+
+export const updateUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    const { name, bio, photo } = req.body;
+    user.name = req.body.name || user.name;
+    user.bio = req.body.bio || user.bio;
+    user.photo = req.body.photo || user.photo;
+
+    const updated = await user.save();
+
+    res.status(200).json({
+      _id: updated._id,
+      name: updated.name,
+      email: updated.email,
+      role: updated.role,
+      photo: updated.photo,
+      bio: updated.bio,
+      isVerified: updated.isVerified,
+    });
+  } else {
+    res.status(404).json({ message: "User not Found" });
+  }
 });
